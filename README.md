@@ -1,0 +1,3 @@
+# ReviewGuard AI — Evidence-first PR Risk Triage
+
+ReviewGuard is a small, runnable prototype for BitElevate's publicized daily GitHub PR-review workflow. It scans *added Python lines* for security and correctness risk patterns, optionally requests semantic findings from an LLM, validates LLM-reported file/line references against the actual diff, and displays prioritized evidence for a human reviewer.
