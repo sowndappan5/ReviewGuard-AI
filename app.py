@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import streamlit as st
 from reviewguard.core import review
+from reviewguard.github import fetch_public_pr_diff
 from reviewguard.llm import llm_review
 
 st.set_page_config(page_title="ReviewGuard AI", page_icon="🛡️", layout="wide")
@@ -10,12 +11,23 @@ st.title("🛡️ ReviewGuard AI")
 st.caption("Evidence-first pull-request risk triage · Cynbit BitElevate opportunity PoC")
 st.info("Static review runs offline. Optional LLM review requires OPENAI_API_KEY. Findings are advisory and require human verification.")
 
-mode = st.radio("Diff source", ["Built-in demo", "Paste unified diff"], horizontal=True)
+mode = st.radio("Diff source", ["Built-in demo", "Paste unified diff", "Public GitHub PR URL"], horizontal=True)
 if mode == "Built-in demo":
     diff = Path(__file__).parent.joinpath("samples", "risky.diff").read_text()
     st.code(diff, language="diff")
-else:
+elif mode == "Paste unified diff":
     diff = st.text_area("Unified diff", height=260, placeholder="diff --git a/example.py b/example.py\n...")
+else:
+    url = st.text_input("Public GitHub pull request URL", placeholder="https://github.com/owner/repo/pull/123")
+    diff = ""
+    if st.button("Fetch diff") and url:
+        try:
+            st.session_state["fetched_diff"] = fetch_public_pr_diff(url, os.getenv("GITHUB_TOKEN"))
+        except Exception as exc:
+            st.error(f"Could not fetch PR: {exc}")
+    diff = st.session_state.get("fetched_diff", "")
+    if diff:
+        st.caption(f"Loaded {len(diff):,} characters")
 
 use_llm = st.checkbox("Add optional LLM semantic review", value=False)
 if st.button("Analyze changes", type="primary", disabled=not bool(diff.strip())):
